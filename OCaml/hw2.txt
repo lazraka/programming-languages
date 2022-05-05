@@ -1,0 +1,30 @@
+This assignment consists of programming a matcher and a parser for a grammar. When given a grammar and a sentence as a fragment of strings, the matcher traverses the grammar rules and searches for a match for a prefix of the fragment, then passes the remaining suffix to an acceptor function. The strategy I utilized to design this program is a depth first search where each nonterminal symbol of a grammar rule is expanded until a terminal symbol is reached before other nonterminal symbols are expanded. To solve the problem with this approach, I used mutual recursion in OCaml with the keywords 'let' and 'and' to define functions that call one another. In the matcher, the function multdfs is responsible for expanding the multiple rules of the grammar, behaving like an ormatcher while the function dfs is responsible for expanding each symbol of a rule. An early approach I attempted included creating a list of expanded nonterminal symbols that grows recursively inwards, yet due to the restrictions on the list types in Ocaml, it is not possible to have one element of the list be a list itself and other elements be symbols of the current top level rule being expanded.
+The parser takes a grammar and a fragment of strings and attempts to match the entire fragement with the rules provided by the grammar. Once it has matched the entire fragment, it returns the parse tree listing out the rules it traversed. I did not explicitly call the make_matcher function in the parser but I utilized the same code structure and depth first search approach. In the case of the parser, only the acceptor function that accepts an empty suffix was passed to the multdfs_parser function to ensure the entire fragment is matched. I made a modification to the matcher to keep track of the derivation of the fragment as the rules of the grammar are traversed. I then converted this traversed path list into the type "('a, 'b) parse_tree" before passing it to the acceptor function. My initial attempt was to pass the derivation in the types of Node and Terminal to another function and iterate through the list to convert to a parse tree type but it made for a more readable and compact code to perform the conversion in the mutually recursive function directly.
+
+Both of these functions have limitations though in terms of which grammars they can traverse. Firstly, if the grammar is left-recursive, these functions will enter an infinite loop as there is no way for them to fail out of the matching. For example, the grammar shown below will continuously expand the leftmost nonterminal [Sentence] when it calls the rule Sentence -> [[Sentence]; [N Noun ; N VPhrase; N Punc]; [N VPhrase ; N Punc]] due to the nature of a depth first search and will result in a stack overflow. 
+
+type sentence_nonterminals =
+	| Sentence | VPhrase | Noun | Verb | Adv | Punc
+
+let sentence_grammar = 
+	(Sentence,
+		function
+		| Sentence -> [[Sentence]; [N Noun ; N VPhrase; N Punc]; [N VPhrase ; N Punc]]
+	 	| VPhrase -> [[N Verb; N Adv]]
+		| Noun -> [[T "Sally"]; [T "Jack"]]
+	 	| Verb -> [[T "runs"]; [T "swims"]; [T "kicks"]]
+	 	| Adv -> [[T "quickly"]; [T "slowly"]]
+	 	| Punc -> [[T "!"]; [T "."]]
+	 )
+
+Another example of a grammar that will cause a stack overflow is two grammar rules that recursively call one another, with this call being the leftmost nonterminal in their options. For example, the grammar below would result in VPhrase calling Verb and Verb calling VPhrase infinitely many times, eventually causing the stack to overflow.
+
+let sentence_grammar = 
+	(Sentence,
+		function
+		| Sentence -> [[N VPhrase ; N Verb]]
+	 	| VPhrase -> [[N Verb]; [N Verb; N Adv]]
+	 	| Verb -> [[N VPhrase]; [T "runs"]; [T "swims"]; [T "kicks"]]
+	 	| Adv -> [[T "quickly"]; [T "slowly"]]
+	 	| Punc -> [[T "!"]; [T "."]]
+	 )
