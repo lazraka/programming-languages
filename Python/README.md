@@ -1,4 +1,5 @@
 # Proxy herd with asyncio
+The goal of the project is to explore an architecture known as "application server herd", where multiple application servers communicate directly to each other as well as via a core database and caches. The interserver communications are designed for rapidly-evolving data whereas the database server will be used for more-stable data that is less-often accessed or that requires transactional semantics. Python's 'asyncio asynchronous' networking library is a good candidate for such an architecture and the goal is towrite a simple and parallelizable proxy for the Google Places API.
 
 ###### Project Specifications
 - The prototype consists of five servers (with server IDs 'Riley', 'Jaquez', 'Juzang', 'Campbell', 'Bernard') that communicate to each other (bidirectionally) with the pattern:
